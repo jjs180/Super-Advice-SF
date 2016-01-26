@@ -1,0 +1,84 @@
+trigger ContactRollUpSum on Contact (after insert, after update, after undelete, after delete ) {
+    
+    Map<Id, Account> accs = new Map<Id, Account>();
+    
+    if(Trigger.isInsert || Trigger.isUpdate || Trigger.isUndelete){
+        
+        for(Contact con : trigger.new){
+            Account acc = new Account(Id = con.AccountId, Total_Contact__c = 0, Total_Active_Contact__c = 0, Total_Account_Balance_Contact__c = 0, Rollup_Total_PV__c = 0, Rollup_Salary_Cover__c = 0, Rollup_Salary_Premium__c = 0, Rollup_TPD_Cover__c = 0, Rollup_TPD_Premium__c = 0, Rollup_Life_Cover__c = 0, Rollup_Life_Premium__c=0);
+            if(!accs.containsKey(con.AccountId)){
+                accs.put(con.AccountId, acc);
+            }
+            
+            if(Trigger.oldMap != null && Trigger.oldMap.containsKey(con.Id)){
+                Contact oldCon = Trigger.oldMap.get(con.Id);
+                
+                if(oldCon.AccountId != con.AccountId){
+                    Account acc2 = new Account(Id = oldCon.AccountId, Total_Contact__c = 0, Total_Active_Contact__c = 0, Total_Account_Balance_Contact__c = 0, Rollup_Total_PV__c = 0, Rollup_Salary_Cover__c = 0, Rollup_Salary_Premium__c = 0, Rollup_TPD_Cover__c = 0, Rollup_TPD_Premium__c = 0, Rollup_Life_Cover__c = 0, Rollup_Life_Premium__c=0);
+                    if(!accs.containsKey(oldCon.AccountId)){
+                        accs.put(oldCon.AccountId, acc2);
+                    }
+                }
+            }
+        }
+    }
+    
+    if(Trigger.isDelete){
+        for(Contact con : trigger.old){
+            Account acc = new Account(Id = con.AccountId, Total_Contact__c = 0, Total_Active_Contact__c = 0, Total_Account_Balance_Contact__c = 0, Rollup_Total_PV__c = 0, Rollup_Salary_Cover__c = 0, Rollup_Salary_Premium__c = 0, Rollup_TPD_Cover__c = 0, Rollup_TPD_Premium__c = 0, Rollup_Life_Cover__c = 0, Rollup_Life_Premium__c=0);
+            if(!accs.containsKey(con.AccountId)){
+                accs.put(con.AccountId, acc);
+            }
+        }
+    }
+    
+    if(!accs.isEmpty()){        
+        //Total all contacts and data except Business Contacts
+        for(Account a: [SELECT Id, (SELECT Account_Balance__c, Total_PV__c, Salary_Cover__c, Salary_Premium__c, TPD_Cover__c, TPD_Premium__c, Life_Cover__c, Life_Premium__c, Active__c, Is_Member__c From Contacts Where Contact.RecordType.DeveloperName != 'Business_Contact'), Name FROM Account WHERE IsPersonAccount = false AND Id IN :accs.keySet()]){
+            Account acc = accs.get((Id)a.get('Id'));
+            
+            //Set default values
+            Integer totalContacts=0;
+            Integer activeContacts = 0;
+            Decimal totalAccountBalance = 0;
+            Decimal totalPV = 0;
+            Decimal totalSalaryCover = 0;
+            Decimal totalSalaryPremium = 0;
+            Decimal totalTPDCover = 0;
+            Decimal totalTPDPremium = 0;
+            Decimal totalLifeCover = 0;
+            Decimal totalLifePremium = 0;            
+            //loop through Contacts and total up
+            for (Contact c : a.Contacts) {
+                totalContacts++;
+                if(c.Active__c && c.Is_Member__c){
+                    activeContacts++;
+                }
+                if(c.Account_Balance__c != null)totalAccountBalance += c.Account_Balance__c;    
+                if(c.Total_PV__c != null)       totalPV             += c.Total_PV__c;
+                if(c.Salary_Cover__c != null)   totalSalaryCover    += c.Salary_Cover__c;
+                if(c.Salary_Premium__c != null) totalSalaryPremium  += c.Salary_Premium__c;
+                if(c.TPD_Cover__c != null)      totalTPDCover       += c.TPD_Cover__c;
+                if(c.TPD_Premium__c != null)    totalTPDPremium     += c.TPD_Premium__c;
+                if(c.Life_Cover__c != null)     totalLifeCover      += c.Life_Cover__c;
+                if(c.Life_Premium__c != null)   totalLifePremium    += c.Life_Premium__c;
+            }
+            //Put totals into account
+            acc.Total_Contact__c                = totalContacts;
+            acc.Total_Active_Contact__c         = activeContacts;
+            acc.Total_Account_Balance_Contact__c= totalAccountBalance;
+            acc.Rollup_Total_PV__c              = totalPV;
+            acc.Rollup_Salary_Cover__c          = totalSalaryCover;
+            acc.Rollup_Salary_Premium__c        = totalSalaryPremium;
+            acc.Rollup_TPD_Cover__c             = totalTPDCover;
+            acc.Rollup_TPD_Premium__c           = totalTPDPremium;
+            acc.Rollup_Life_Cover__c            = totalLifeCover;
+            acc.Rollup_Life_Premium__c          = totalLifePremium;
+            
+            accs.put(acc.Id, acc);
+        }
+        
+        update accs.values();
+    }
+    
+}

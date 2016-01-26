@@ -1,0 +1,9 @@
+trigger updateEmployee on Contact (before insert,before update) {
+    
+    //Handle moving of Contacts to Ex Member, Closed Account and Deceased Member Accounts
+    
+    if(trigger.isBefore && (trigger.isInsert || trigger.isUpdate)){
+        updateEmployeeHelper.updateAccount(trigger.new,trigger.oldMap);
+    }
+    
+}
