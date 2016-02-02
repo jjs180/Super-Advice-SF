@@ -1,0 +1,27 @@
+Sub MLC_Format()
+'
+' MLC_Format Macro
+'
+
+'
+Dim sht As Worksheet
+Dim LastRow As Long
+
+Set sht = ThisWorkbook.ActiveSheet
+LastRow = sht.Cells(sht.Rows.Count, "A").End(xlUp).Row
+    
+    Range("K2:K100000").NumberFormat = "m/d/yyyy;@"
+    Range("P2:P100000").NumberFormat = "0.00"
+    Range("Z2:AD100000").NumberFormat = "m/d/yyyy;@"
+    Range("AE2:AL100000").NumberFormat = "0.00"
+    Range("AN2:AN100000").NumberFormat = "0.00"
+    Range("AY1").Value = "RecordTypeId"
+    Range("AY2:AY" & LastRow).Value = "012900000019VI2"
+    Range("AZ1").Value = "IsMember"
+    Range("AZ2:AZ" & LastRow).Value = "TRUE"
+    Range("BA1").Value = "IsActive"
+    Range("BA2:BA" & LastRow).Value = "TRUE"
+    Range("BB1").Value = "Fund Manager"
+    Range("BB2:BB" & LastRow).Value = "TRUE"
+    
+End Sub
