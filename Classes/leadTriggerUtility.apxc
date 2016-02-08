@@ -2,14 +2,14 @@ public class leadTriggerUtility {
 	
     public class leadTriggerUtilityException extends Exception {}
     
-    //Deletes Tasks that are 'Not Started'
+    //Deletes Tasks that are 'Not Started' and excludes ones Missing WhoId (preserves new ones created on Opportunity)
     public static void cleanUpTasks(list<lead> leadList){
         if(leadList.size() > 0){
             Set<Id> accountIds = new Set<Id>();
         	for(Lead l: leadList){
             	accountIds.add(l.convertedAccountId);
         	}
-            List<Task> tasksToDelete = [SELECT Id FROM Task WHERE AccountId IN :accountIds AND Status ='Not Started'];
+            List<Task> tasksToDelete = [SELECT Id FROM Task WHERE AccountId IN :accountIds AND WhoId != NULL AND Status ='Not Started'];
             if(tasksToDelete.size() >0 ){
                 try{
                     delete tasksToDelete;
