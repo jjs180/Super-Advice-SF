@@ -1,0 +1,32 @@
+public class TestData_Utility{
+    
+    public static User createStandardUser(){
+        Profile p = [SELECT Id FROM Profile WHERE Name='Standard User']; 
+        User userRecord = new User(Alias = 'standt', Email='standarduser@testorg9483918.com', 
+            EmailEncodingKey='UTF-8', LastName='Testing', LanguageLocaleKey='en_US', 
+            LocaleSidKey='en_US', ProfileId = p.Id, 
+            TimeZoneSidKey='America/Los_Angeles', UserName='standarduser@testorg9483918.com');
+        return userRecord;
+    }
+    
+    public static Account createAccount(){
+        Account accountRecord = new Account(name='test');
+        return accountRecord;
+    }
+    
+    public static contact createContact(Id AccId){
+        contact contactRecord = new contact(lastname = 'test',accountId = accId);
+        return contactRecord;
+    }
+    
+    public static Lead createLead(){
+        Lead leadRecord = new Lead(firstname = 'testlead938212', lastname = 'last934820', Status = 'Open');
+        return leadRecord;
+    }
+    
+    public static Task createLeadTask(Id leadId, Id ownerId){
+        Task taskRecord = new Task(OwnerId = ownerId, WhoId = leadId, Subject = 'Test Task Subject', 
+                                  Priority = 'Normal', Status='Not Started');
+        return taskRecord;
+    }
+}

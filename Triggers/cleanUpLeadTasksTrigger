@@ -1,0 +1,14 @@
+trigger cleanUpLeadTasksTrigger on Lead (after update) {
+    
+    List<Lead> convertedLeads = new List<Lead>();
+    
+    for(Lead l :Trigger.New){
+        if(l.isConverted && trigger.oldmap.get(l.id).IsConverted == false){
+            convertedLeads.add(l);
+        }
+    }
+    
+    //Send Converted Leads to cleanUp Tasks method
+    leadTriggerUtility.cleanUpTasks(convertedLeads);
+    
+}

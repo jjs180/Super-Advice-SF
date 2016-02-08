@@ -1,0 +1,44 @@
+@isTest
+public class Test_leadTriggerUtility {
+
+    static testMethod void Test_cleanUpLeadTasks(){
+        Lead testLead = TestData_Utility.createLead();
+        insert testLead;
+        system.assertNotEquals(testLead.Id,null);
+        
+        User testUser = TestData_Utility.createStandardUser();
+        insert testUser;
+        system.assertNotEquals(testUser.Id,null);
+        
+        Task testTask1 = TestData_Utility.createLeadTask(testLead.Id, testUser.Id);
+        insert testTask1;
+        system.assertNotEquals(testTask1.Id,null);
+        Task testTask2 = TestData_Utility.createLeadTask(testLead.Id, testUser.Id);
+        insert testTask2;
+        system.assertNotEquals(testTask2.Id,null);
+        
+        testTask1.Status = 'Completed';
+        update testTask1;
+        
+        List<Task> taskList = [SELECT Id FROM Task WHERE WhoId =:testLead.Id];
+   		system.assertEquals(2, taskList.size() );
+        
+        test.StartTest();
+        Database.LeadConvert lc = new database.LeadConvert();
+        lc.setLeadId(testLead.id);
+
+        LeadStatus convertStatus = [Select Id, MasterLabel from LeadStatus where IsConverted=true limit 1];
+        lc.setConvertedStatus(convertStatus.MasterLabel);
+
+        Database.LeadConvertResult lcr = Database.convertLead(lc);
+        System.assert(lcr.isSuccess());
+        
+        Id convertedAcctId = lcr.getAccountId();
+        
+		taskList = [SELECT Id FROM Task WHERE AccountId =:convertedAcctId];
+        system.assertEquals(1, taskList.size() );
+		
+        test.StopTest();
+    }    
+
+}
