@@ -1,0 +1,15 @@
+trigger cleanUpOppTasksTrigger on Opportunity (after update) {
+    
+    List<Opportunity> oppList = new List<Opportunity>();
+    
+    for(Opportunity o :Trigger.New){
+        if(o.StageName != trigger.oldmap.get(o.id).StageName){
+            oppList.add(o);
+        }
+    }
+    
+    //Send  Leads to cleanUp Tasks method
+    oppTriggerUtility.cleanUpTasks(oppList);
+    
+    
+}

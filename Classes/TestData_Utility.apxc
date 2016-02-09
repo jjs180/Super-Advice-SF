@@ -24,8 +24,26 @@ public class TestData_Utility{
         return leadRecord;
     }
     
+    public static Opportunity createA4LOpportunity(Id AcctId){
+        List<RecordType> oppRecTypes = [SELECT Id FROM RecordType WHERE Name = 'A4L Opportunity (AU)' LIMIT 1];
+        string A4LrecordTypeId;
+        if(oppRecTypes.size()>0){
+        	A4LrecordTypeId = oppRecTypes[0].Id;
+        }
+        Opportunity oppRecord = new Opportunity(RecordTypeId = A4LrecordTypeId, AccountId = AcctId, 
+                                                Name = 'Test Opp-fjkiri28', CloseDate=(date.today()+30), 
+                                                StageName = 'A4L 2.0 Form Received' );
+    	return oppRecord;
+    }
+    
     public static Task createLeadTask(Id leadId, Id ownerId){
         Task taskRecord = new Task(OwnerId = ownerId, WhoId = leadId, Subject = 'Test Task Subject', 
+                                  Priority = 'Normal', Status='Not Started');
+        return taskRecord;
+    }
+    
+    public static Task createTask(Id whatId, Id ownerId){
+        Task taskRecord = new Task(OwnerId = ownerId, WhatId = whatId, Subject = 'Test Task Subject', 
                                   Priority = 'Normal', Status='Not Started');
         return taskRecord;
     }

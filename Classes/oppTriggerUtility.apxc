@@ -1,0 +1,40 @@
+public class oppTriggerUtility {
+	public class oppTriggerUtilityException extends Exception {}
+    
+    public static void cleanUpTasks(list<Opportunity> oppList){ //deletes all Tasks of 'Not Started' status    	
+        //Get record types included in cleanup operation
+        List<Opportunity_Task_Cleanup_RecordTypes__c> recordTypeSettings = Opportunity_Task_Cleanup_RecordTypes__c.getAll().values();
+        Set<String> includedRecordTypes = new Set<String>();
+        if(recordTypeSettings.size()>0){
+            for(Opportunity_Task_Cleanup_RecordTypes__c rts :recordTypeSettings ){
+                includedRecordTypes.add(rts.Name);
+            }
+        }
+		
+        List<RecordType> RTs = [SELECT Id FROM RecordType WHERE Name IN:includedRecordTypes];
+        Set<Id> includedRecordTypeIds = new Set<Id>();
+        for(RecordType rt: RTs){
+            includedRecordTypeIds.add(rt.Id);
+        }
+        //End Get Record Types
+        
+        //Get Opportunities of the included record types
+        Set<Id> oppIds = new Set<Id>();
+        for(Opportunity o: oppList){
+            if( includedRecordTypeIds.contains(o.RecordTypeId) ) { oppIds.add(o.Id); }
+        }
+        
+        List<Task> tasksToDelete = [SELECT Id FROM Task WHERE WhatId IN :oppIds AND Status = 'Not Started'];
+            if(tasksToDelete.size() >0 ){
+                try{
+                    delete tasksToDelete;
+                }
+				catch(exception e){
+                	throw new oppTriggerUtilityException(e.getMessage());
+            	}
+            }
+        
+    }
+    
+    
+}

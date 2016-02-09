@@ -1,0 +1,50 @@
+@isTest
+public class Test_oppTriggerUtility {
+    
+    static testMethod void Test_cleanUpOppTasks(){       
+        User testUser = TestData_Utility.createStandardUser();
+        insert testUser;
+        system.assertNotEquals(testUser.Id,null);
+        
+        Account testAccount = TestData_Utility.createAccount();
+        insert testAccount;
+        system.assertNotEquals(testAccount.Id,null);
+        
+        Opportunity_Task_Cleanup_RecordTypes__c theSetting = new Opportunity_Task_Cleanup_RecordTypes__c(Name = 'A4L Opportunity (AU)');
+        insert theSetting;
+        system.assertEquals(theSetting.Name,'A4L Opportunity (AU)');
+        
+        Opportunity testOpp = TestData_Utility.createA4LOpportunity(testAccount.Id);
+        insert testOpp;
+        system.assertNotEquals(testOpp.Id,null);
+        
+        Task testTask1 = TestData_Utility.createTask(testOpp.Id, testUser.Id);
+        insert testTask1;
+        system.assertNotEquals(testTask1.Id,null);
+        Task testTask2 = TestData_Utility.createTask(testOpp.Id, testUser.Id);
+        insert testTask2;
+        system.assertNotEquals(testTask2.Id,null);
+        
+        testTask1.Status = 'Completed';
+        update testTask1;
+        
+        List<Task> taskList = [SELECT Id FROM Task WHERE WhatId =:testOpp.Id];
+   		system.assert(taskList.size() > 0);
+        integer totalTasks = taskList.size();
+        
+        test.StartTest();
+		testOpp.StageName = 'Updated Stage';
+        update testOpp;
+        
+		taskList = [SELECT Id FROM Task WHERE WhatId =:testOpp.Id];
+        system.assertEquals( 1, taskList.size() ); //assert that only the Completed task remains
+		
+        test.StopTest();
+    }    
+
+    
+}
+
+
+
+
