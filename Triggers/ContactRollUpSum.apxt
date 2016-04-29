@@ -5,7 +5,7 @@ trigger ContactRollUpSum on Contact (after insert, after update, after undelete,
     if(Trigger.isInsert || Trigger.isUpdate || Trigger.isUndelete){
         
         for(Contact con : trigger.new){
-            Account acc = new Account(Id = con.AccountId, Total_Contact__c = 0, Total_Active_Contact__c = 0, Total_Account_Balance_Contact__c = 0, Rollup_Total_PV__c = 0, Rollup_Salary_Cover__c = 0, Rollup_Salary_Premium__c = 0, Rollup_TPD_Cover__c = 0, Rollup_TPD_Premium__c = 0, Rollup_Life_Cover__c = 0, Rollup_Life_Premium__c=0);
+            Account acc = new Account(Id = con.AccountId, Total_Active_Members__c = 0 , Total_Contact__c = 0, Total_Active_Contact__c = 0, Total_Account_Balance_Contact__c = 0, Rollup_Total_PV__c = 0, Rollup_Salary_Cover__c = 0, Rollup_Salary_Premium__c = 0, Rollup_TPD_Cover__c = 0, Rollup_TPD_Premium__c = 0, Rollup_Life_Cover__c = 0, Rollup_Life_Premium__c=0);
             if(!accs.containsKey(con.AccountId)){
                 accs.put(con.AccountId, acc);
             }
@@ -14,7 +14,7 @@ trigger ContactRollUpSum on Contact (after insert, after update, after undelete,
                 Contact oldCon = Trigger.oldMap.get(con.Id);
                 
                 if(oldCon.AccountId != con.AccountId){
-                    Account acc2 = new Account(Id = oldCon.AccountId, Total_Contact__c = 0, Total_Active_Contact__c = 0, Total_Account_Balance_Contact__c = 0, Rollup_Total_PV__c = 0, Rollup_Salary_Cover__c = 0, Rollup_Salary_Premium__c = 0, Rollup_TPD_Cover__c = 0, Rollup_TPD_Premium__c = 0, Rollup_Life_Cover__c = 0, Rollup_Life_Premium__c=0);
+                    Account acc2 = new Account(Id = oldCon.AccountId, Total_Active_Members__c = 0, Total_Contact__c = 0, Total_Active_Contact__c = 0, Total_Account_Balance_Contact__c = 0, Rollup_Total_PV__c = 0, Rollup_Salary_Cover__c = 0, Rollup_Salary_Premium__c = 0, Rollup_TPD_Cover__c = 0, Rollup_TPD_Premium__c = 0, Rollup_Life_Cover__c = 0, Rollup_Life_Premium__c=0);
                     if(!accs.containsKey(oldCon.AccountId)){
                         accs.put(oldCon.AccountId, acc2);
                     }
@@ -25,21 +25,35 @@ trigger ContactRollUpSum on Contact (after insert, after update, after undelete,
     
     if(Trigger.isDelete){
         for(Contact con : trigger.old){
-            Account acc = new Account(Id = con.AccountId, Total_Contact__c = 0, Total_Active_Contact__c = 0, Total_Account_Balance_Contact__c = 0, Rollup_Total_PV__c = 0, Rollup_Salary_Cover__c = 0, Rollup_Salary_Premium__c = 0, Rollup_TPD_Cover__c = 0, Rollup_TPD_Premium__c = 0, Rollup_Life_Cover__c = 0, Rollup_Life_Premium__c=0);
+            Account acc = new Account(Id = con.AccountId, Total_Active_Members__c = 0, Total_Contact__c = 0, Total_Active_Contact__c = 0, Total_Account_Balance_Contact__c = 0, Rollup_Total_PV__c = 0, Rollup_Salary_Cover__c = 0, Rollup_Salary_Premium__c = 0, Rollup_TPD_Cover__c = 0, Rollup_TPD_Premium__c = 0, Rollup_Life_Cover__c = 0, Rollup_Life_Premium__c=0);
             if(!accs.containsKey(con.AccountId)){
                 accs.put(con.AccountId, acc);
             }
         }
     }
+  
+    //Exclude Holding Accounts from RollUp Calculation
+    List<Holding_Accounts__c> holdingAccounts = Holding_Accounts__c.getAll().values();    
+    Set<string> holdingAcctIds = new Set<string>();
+    for(Holding_Accounts__c ha: holdingAccounts){
+        holdingAcctIds.add(ha.Account_ID__c);
+    }
+    if(holdingAcctIds.size() >0){
+        for(string theId: holdingAcctIds){
+            accs.remove(theId);
+        }
+    }
+    //End Exclude Holding Accounts
     
     if(!accs.isEmpty()){        
         //Total all contacts and data except Business Contacts
-        for(Account a: [SELECT Id, (SELECT Account_Balance__c, Total_PV__c, Salary_Cover__c, Salary_Premium__c, TPD_Cover__c, TPD_Premium__c, Life_Cover__c, Life_Premium__c, Active__c, Is_Member__c From Contacts Where Contact.RecordType.DeveloperName != 'Business_Contact'), Name FROM Account WHERE IsPersonAccount = false AND Id IN :accs.keySet()]){
+        for(Account a: [SELECT Id, (SELECT Account_Balance__c, Total_PV__c, Salary_Cover__c, Salary_Premium__c, TPD_Cover__c, TPD_Premium__c, Life_Cover__c, Life_Premium__c, Active__c, Is_Member__c, RecordType.DeveloperName From Contacts), Name FROM Account WHERE IsPersonAccount = false AND Id IN :accs.keySet()]){
             Account acc = accs.get((Id)a.get('Id'));
             
             //Set default values
             Integer totalContacts=0;
             Integer activeContacts = 0;
+            Integer activeMembers = 0;
             Decimal totalAccountBalance = 0;
             Decimal totalPV = 0;
             Decimal totalSalaryCover = 0;
@@ -51,8 +65,11 @@ trigger ContactRollUpSum on Contact (after insert, after update, after undelete,
             //loop through Contacts and total up
             for (Contact c : a.Contacts) {
                 totalContacts++;
-                if(c.Active__c && c.Is_Member__c){
+                if(c.Active__c){
                     activeContacts++;
+                }
+                if(c.Active__c && c.Is_Member__c && c.RecordType.DeveloperName != 'Business_Contact'){
+                    activeMembers++;
                 }
                 if(c.Account_Balance__c != null)totalAccountBalance += c.Account_Balance__c;    
                 if(c.Total_PV__c != null)       totalPV             += c.Total_PV__c;
@@ -66,6 +83,7 @@ trigger ContactRollUpSum on Contact (after insert, after update, after undelete,
             //Put totals into account
             acc.Total_Contact__c                = totalContacts;
             acc.Total_Active_Contact__c         = activeContacts;
+            acc.Total_Active_Members__c         = activeMembers;
             acc.Total_Account_Balance_Contact__c= totalAccountBalance;
             acc.Rollup_Total_PV__c              = totalPV;
             acc.Rollup_Salary_Cover__c          = totalSalaryCover;

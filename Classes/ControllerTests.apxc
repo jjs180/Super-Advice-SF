@@ -1,0 +1,56 @@
+@isTest(seeAllData=True)
+public class ControllerTests {   
+   
+    //Test Methods
+    public static testMethod void testClosedAccountUtilityController(){
+        PageReference pageRef = Page.ClosedAccountUtility;
+        Test.setCurrentPage(pageRef);
+
+        
+        //  
+        ClosedAccountUtilityController theController = new ClosedAccountUtilityController();
+        
+        Schema.DescribeSObjectResult R = Contact.SObjectType.getDescribe();
+		List<Schema.RecordTypeInfo> RTs = R.getRecordTypeInfos();
+        
+        theController.filterDate = date.today();
+        theController.recordTypeOption = RTs[2].getRecordTypeId();
+        theController.findContacts();
+        theController.moveToClosedAccount();
+        List<SelectOption> recordTypeOptions = theController.recordTypeOptions;
+        
+    }
+
+    
+    public static testMethod void testXFDFController(){
+        //Test Data
+        Account a = TestData_Utility.createAccount();
+        insert a;
+        system.assertNotEquals(null, a.Id);        
+        Contact c = TestData_Utility.createContact(a.Id);
+        insert c;
+        system.assertNotEquals(null, c.Id);        
+        Opportunity o = TestData_Utility.createA4LOpportunity(a.Id);
+        insert o;
+        system.assertNotEquals(null, o.Id);
+        //end Create Test Data
+        
+        PageReference pageRef = Page.XFDF_Page;
+		Test.setCurrentPage(pageRef);
+        
+        XFDFController theController = new XFDFController();
+        
+        Id theId = theController.getTheId();
+        
+        List<XFDF_Setting__c> XFDF_list = new List<XFDF_Setting__c>();
+        XFDF_list = theController.getPDFForms();
+        
+		
+        PageReference XFDFGenPage = Page.XFDF_Generate;
+        XFDFGenPage.getParameters().put('XFDFID', XFDF_list[0].Id);
+        XFDFGenPage.getParameters().put('Id', c.Id);
+		Test.setCurrentPage(XFDFGenPage);
+        theController.XFDFInit();
+        
+    }
+}

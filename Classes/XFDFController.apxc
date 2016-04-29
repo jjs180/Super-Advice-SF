@@ -1,0 +1,43 @@
+public class XFDFController {
+	
+   public List<XFDF_Setting__c> getPDFForms(){
+        List<XFDF_Setting__c> XFDFSettings = [SELECT Id, Name, Form_Path__c, Original_ID__c, Modified_ID__c, XML_Fields__c, 
+                               Query_Fields__c, Object_Name__c FROM XFDF_Setting__c ORDER BY Name ASC];
+        return XFDFSettings;
+   }
+    
+   public Id getTheId(){
+       return ApexPages.currentPage().getParameters().get('Id');
+   }
+   
+   public PageReference XFDFInit() {
+       Id XFDFSettingId = ApexPages.currentPage().getParameters().get('XFDFID');
+       Id objectId = ApexPages.currentPage().getParameters().get('Id');
+       List<XFDF_Setting__c> xfdfList = [SELECT Name, Form_Path__c, Original_ID__c, Modified_ID__c, XML_Fields__c, 
+                               Query_Fields__c, Object_Name__c FROM XFDF_Setting__c WHERE Id=:XFDFSettingId LIMIT 1];
+       string theQuery = '';
+       IF(xfdfList.size()>0){
+           theQuery = 'SELECT '+ xfdfList[0].Query_Fields__c + ' FROM ' + xfdfList[0].Object_Name__c  + ' WHERE Id=:objectId';
+       }
+       system.debug('the Query is:' + theQuery);
+       
+       Contact c = database.query(theQuery);
+    	
+        XFDF_Utility myXFDFUtility = new XFDF_Utility();
+		String xmlContent = myXFDFUtility.getXMLString(c, xfdfList[0]);
+    	
+		Attachment attachment = new Attachment();
+       	attachment.Body = Blob.valueOf(xmlContent);
+      	attachment.Name = xfdfList[0].Name + '_' + c.lastname + c.firstname + '.XFDF';
+		attachment.Description = 'Download to the appropriate Fund Manager Forms folder and open in Adobe Acrobat Pro to see auto-filled fields';
+      	attachment.ParentId = c.Id;
+       
+       	insert attachment;          
+		
+        PageReference redirect = new PageReference('/' + attachment.id);
+		redirect.setRedirect(true);
+		return redirect;
+		
+   }
+    
+}

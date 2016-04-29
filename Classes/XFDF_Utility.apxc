@@ -1,0 +1,29 @@
+Public class XFDF_Utility {
+	
+    public string getXMLString(Sobject c, XFDF_Setting__c xfdfSetting){
+        
+        //Header of XFDF document
+        string xmlString = '<?xml version="1.0" encoding="UTF-8"?>' +
+            '<xfdf xmlns="http://ns.adobe.com/xfdf/" xml:space="preserve">' +
+            '<f href="' + xfdfSetting.Form_Path__c + '"/>' +
+            '<fields>';
+        
+        //Replace values into fields section
+        
+        string fieldsString = xfdfSetting.XML_Fields__c;
+        string queryFieldsString = xfdfSetting.Query_Fields__c;
+        List<string> queryFieldsList = queryFieldsString.split(',');
+        //system.debug('query fields are: ' + queryFieldsList);
+
+        for(string s: queryFieldsList){
+            fieldsString = fieldsString.replace('<value>'+s+'</value>', '<value>'+c.get(s)+'</value>');
+        }
+        
+        xmlString += fieldsString;
+        xmlString += '</fields>' +
+            '<ids original="'+ xfdfSetting.Original_ID__c +'" modified="'+ xfdfSetting.Modified_ID__c + '"/>' +
+            '</xfdf>';
+            
+        return xmlString;
+    }
+}

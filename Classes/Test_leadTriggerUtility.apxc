@@ -35,7 +35,7 @@ public class Test_leadTriggerUtility {
         
         Id convertedAcctId = lcr.getAccountId();
         
-		taskList = [SELECT Id FROM Task WHERE AccountId =:convertedAcctId];
+		taskList = [SELECT Id FROM Task WHERE AccountId =:convertedAcctId AND Id =:testTask1.Id]; //assert completed task survived
         system.assertEquals(1, taskList.size() );
 		
         test.StopTest();

@@ -1,0 +1,59 @@
+public class ClosedAccountUtilityController {
+
+    Public ClosedAccountUtilityController(){
+        
+    }
+    
+    Public List<Contact> ContactList {get;set;}
+    Public DateTime filterDate {get;set;}
+    Public Integer contactCount {get;set;}
+    Public List<SelectOption> recordTypeOptions{
+        get{
+            Schema.DescribeSObjectResult R = Contact.SObjectType.getDescribe();
+            List<Schema.RecordTypeInfo> RTs = R.getRecordTypeInfos();
+            List<SelectOption> results = new List<SelectOption>();
+            for(RecordTypeInfo RT: RTs){
+               results.add(new SelectOption(RT.getRecordTypeId(), RT.getName() )); 
+            }
+            return results;
+        }
+        set;
+    }
+    public String recordTypeOption { 
+        get
+        {
+                if ( recordTypeOption == null ) {
+                        recordTypeOption = 'Please Select';
+                }               
+                return recordTypeOption;
+        }
+         set; }
+    
+    public string query{get;set;}
+    public boolean toggle{get;set;}
+    
+    public void findContacts(){
+        string filterDateString = filterDate.format('yyyy-MM-dd\'T\'hh:mm:ss\'Z\'');
+        query = 'SELECT AccountId, Account.Name, LastModifiedDate FROM Contact WHERE RecordType.Id = \'' 
+                                     + recordTypeOption + '\' AND Account.Name != \'Closed accounts\' AND LastModifiedDate < '
+                                     + filterDateString + ' AND Deceased_Member__c = false';
+        
+        ContactList = Database.query(query);
+        contactCount = ContactList.size();
+        toggle = true;
+    }
+    
+    public void moveToClosedAccount(){
+        Map<String,Holding_Accounts__c>mapHoldingAccount = Holding_Accounts__c.getAll();
+        for(Contact c: ContactList){
+            c.AccountId = mapHoldingAccount.get('Closed Account').Account_ID__c;
+        }
+        try{
+            update ContactList;
+        }
+        catch(Exception e){
+            system.debug('Error updating contacts--- ' + e.getMessage());
+        }
+    }
+    
+}
